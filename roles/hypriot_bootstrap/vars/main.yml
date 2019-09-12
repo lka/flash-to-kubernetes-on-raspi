@@ -1,0 +1,10 @@
+dbs_packages:
+  - sudo
+
+dbs_hostname_files:
+  - /etc/hostname
+  - /etc/hosts
+  - /etc/ssh/ssh_host_rsa_key.pub
+  - /etc/ssh/ssh_host_dsa_key.pub
+  - /etc/motd
+

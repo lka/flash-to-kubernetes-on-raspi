@@ -1,0 +1,4 @@
+---
+- name: AUTHORIZED_KEY | Install SSH public key to pirate user
+  authorized_key: user=pirate key="{{ dbs_ssh_pubkey }}"
+  when: dbs_ssh_pubkey is defined
