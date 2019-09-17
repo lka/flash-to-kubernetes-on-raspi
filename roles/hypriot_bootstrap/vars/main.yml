@@ -1,5 +1,6 @@
 dbs_packages:
   - sudo
+  - aptitude
 
 dbs_hostname_files:
   - /etc/hostname

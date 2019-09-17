@@ -6,6 +6,7 @@
   hostname: name={{ dbs_hostname }}
   notify: restart rsyslog
   register: change_hostname
+  when: dbs_hostname != "black-pearl"
 
 - name: TEMPLATE | Cleanup /etc/hosts
   template: src=etc/hosts.j2 dest=/etc/hosts
@@ -23,6 +24,13 @@
     replace='{{ dbs_hostname }}'
   with_items: "{{ dbs_hostname_files }}"
   ignore_errors: yes
+  when: change_hostname.changed
+
+- name: REPLACE | Change /etc/cloud/cloud.cfg
+  replace: >
+    dest=/etc/cloud/cloud.cfg
+    regexp='preserve_hostname: false'
+    replace='preserve_hostname: true'
   when: change_hostname.changed
 
 - name: REPLACE | Change old short dbs_hostname to new on several files

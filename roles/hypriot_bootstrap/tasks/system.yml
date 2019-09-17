@@ -7,6 +7,7 @@
     - "UseDNS no"
     - "GSSAPIAuthentication no"
     - "UsePAM no"
+    - "PasswordAuthentication no"
   notify: restart ssh
 
 - name: SSH login speedup, remove enabling lines

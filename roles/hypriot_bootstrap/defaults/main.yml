@@ -1,20 +1,20 @@
 # -------------------------
 # System configuration
 # -------------------------
-dbs_hostname: 'debian-boostrap.local'
+dbs_hostname: 'black-pearl'
 dbs_locales:
   - 'en_US.UTF-8'
 dbs_default_locale: 'en_US.UTF-8'
 dbs_timezone: 'Europe/Berlin'
 dbs_use_systemd: false
-dbs_use_unbound: false
+dbs_use_unbound: true
 dbs_use_dotfiles: true
 dbs_uninstall_packages: []
 
 # -------------------------
 # Role setup
 # -------------------------
-dbs_set_hostname: false
+dbs_set_hostname: true
 dbs_set_locale: true
 dbs_set_timezone: true
 dbs_set_ntp: true
