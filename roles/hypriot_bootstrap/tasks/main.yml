@@ -1,4 +1,7 @@
 ---
+- name: INCLUDE | Check Parameters
+  include: check-parameters.yml
+
 - name: INCLUDE | Prepare system
   include: prepare.yml
 

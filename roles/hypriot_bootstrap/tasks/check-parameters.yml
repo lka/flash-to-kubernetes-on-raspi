@@ -1,0 +1,5 @@
+- name: Fail script if required dbs_hostname parameter is missing
+  fail:
+    msg: "You have to add -e 'dbs_hostname='"
+  when: (dbs_hostname is not defined) or (dbs_hostname == "") or (dbs_hostname == "black-pearl")
+

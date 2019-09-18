@@ -13,21 +13,20 @@ I want to build an ansible project that is able to configure and update raspberr
 - If cluster exists, add next raspi to the cluster as a worker node.
 
 ## steps
-1. create branch "bootstrap" for the next steps
-1. create a tree for the ansible project
-1. boot raspi with micro-sd card and connect to it
-1. rename it with next node number and let it only be accessible with ssh-key
+- [x] create branch "bootstrap" for the next steps
+- [x] create a tree for the ansible project
+- [ ] write ansible_bootstrap role in order let it only be accessible with ssh-key and rename it with next node
 
 ## Usage
 1. flash micro-sd card with the newest hypriot os
 1. boot raspi with micro-sd card
 1. cd <to your .ssh directory>
 ---
-$ ssh-copy-id pirate@black-pear
-  enter password hypriot
+    $ ssh-copy-id pirate@black-pear
+      enter password hypriot
 ---
 1. cd <to your ansible directory>
 ---
-$ ansible-playbook -e dbs_hostname=node3 bootstrap.yml
+    $ ansible-playbook -e dbs_hostname=node3 bootstrap.yml
 ---
 
