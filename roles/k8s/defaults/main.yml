@@ -1,0 +1,28 @@
+# -------------------------
+# System configuration
+# ------------------------- 
+dbs_uninstall_packages: []
+
+# -------------------------
+# Role setup
+# -------------------------
+dbs_set_iptables: true
+
+# -------------------------
+# Kubernetes Setup
+# -------------------------
+k8s_debian_packages:
+  - kubelet
+  - kubeadm
+  - kubectl
+
+k8s_debian_repo_info:
+  key: "{{ k8s_package_url }}/apt/doc/apt-key.gpg"
+  repo: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+
+k8s_package_url: https://packages.cloud.google.com
+
+k8s_version: 1.15.3
+
+
+

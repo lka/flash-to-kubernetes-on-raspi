@@ -1,0 +1,20 @@
+---
+- name: ALTERNATIVES | Set alternative to old iptables
+  alternatives:
+    name: iptables
+    path: /usr/sbin/iptables-legacy
+
+- name: ALTERNATIVES | Set alternative to old ip6tables
+  alternatives:
+    name: ip6tables
+    path: /usr/sbin/ip6tables-legacy
+
+- name: ALTERNATIVES | Set alternative to old arptables
+  alternatives:
+    name: arptables
+    path: /usr/sbin/arptables-legacy
+
+- name: ALTERNATIVES | Set alternative to old ebtables
+  alternatives:
+    name: ebtables
+    path: /usr/sbin/ebtables-legacy
