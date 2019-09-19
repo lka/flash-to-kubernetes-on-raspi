@@ -1,0 +1,37 @@
+---
+# Doc: https://wiki.debian.org/HowTo/ChangeHostname
+# TODO : notify other services
+
+- name: HOSTNAME
+  block:
+    - name: change hostname
+      hostname: name={{ dbs_hostname }}
+      register: change_hostname
+      notify: reboot_node
+
+    - name: TEMPLATE | Cleanup /etc/hosts
+      template: src=etc/hosts.j2 dest=/etc/hosts
+      notify: restart rsyslog
+
+    - name: REPLACE | Change old fqdn dbs_hostname to new on several files
+      replace: >
+        dest={{ item }}
+        regexp='\b{{ ansible_fqdn }}\b'
+        replace='{{ dbs_hostname }}'
+      with_items: "{{ dbs_hostname_files }}"
+      ignore_errors: yes
+
+    - name: REPLACE | Change /etc/cloud/cloud.cfg
+      replace: >
+        dest=/etc/cloud/cloud.cfg
+        regexp='preserve_hostname: false'
+        replace='preserve_hostname: true'
+
+    - name: REPLACE | Change old short dbs_hostname to new on several files
+      replace: >
+        dest={{ item }}
+        regexp='\b{{ ansible_hostname }}\b'
+        replace='{{ dbs_hostname | regex_replace('^(\w)\..+$', '\\1') }}'
+      with_items: "{{ dbs_hostname_files }}"
+      ignore_errors: yes
+  when: dbs_hostname != "black-pearl"

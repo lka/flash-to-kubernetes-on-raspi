@@ -29,7 +29,7 @@ clone project from github
 - download newest Hypriot OS
 - unzip and write it to flash-card (either with flash tool or Win32 Disk Imager)
 - boot raspberry pi with flash-card inserted
-- copy .ssh/id_rsa.pub to raspi with
+- copy .ssh/id_rsa.pub to raspi with 
 ---
     $ ssh-copy-id pirate@black-pearl
 ---

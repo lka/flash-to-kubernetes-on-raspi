@@ -1,0 +1,6 @@
+---
+ansible_user: "pirate"
+dbs_ssh_pubkey: "{{ lookup('file', 'keys/id_rsa.pub') }}"
+dbs_timezone: "Europe/Berlin"
+
+

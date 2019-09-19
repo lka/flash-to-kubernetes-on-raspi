@@ -1,0 +1,41 @@
+---
+- name: restart ntp
+  service: name=ntp state=restarted
+
+- name: restart cron
+  service: name=cron state=restarted
+
+- name: restart rsyslog
+  service: name=rsyslog state=restarted
+
+- name: update tzdata
+  command: dpkg-reconfigure -f noninteractive tzdata
+
+- name: locale-gen
+  command: locale-gen
+
+#  service: name=networking state=reloaded isn't working on debian
+- name: reload networking
+  args:
+    warn: false # prevent service warning
+  command: service networking restart
+
+- name: restart ssh
+  service: name=ssh state=restarted
+
+- name: reboot_node
+  shell: "sleep 5 && shutdown -r now"
+  async: 1
+  poll: 0
+  notify: post_reboot
+
+- name: post_reboot
+  become: false
+  wait_for:
+    port: 22
+    host: '{{ dbs_hostname }}'
+    search_regex: OpenSSH
+    delay: 10
+  vars:
+    ansible_connection: local
+

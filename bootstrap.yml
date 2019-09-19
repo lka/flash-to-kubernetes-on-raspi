@@ -1,0 +1,6 @@
+---
+- hosts: black-pearl
+  become: true
+
+  roles:
+    - hypriot_bootstrap
