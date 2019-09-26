@@ -29,11 +29,6 @@ clone project from github
 - download newest Hypriot OS
 - unzip and write it to flash-card (either with flash tool or Win32 Disk Imager)
 - boot raspberry pi with flash-card inserted
-- copy .ssh/id_rsa.pub to raspi with 
----
-    $ ssh-copy-id pirate@black-pearl
----
-- and password "hypriot"
 - dive into ansible directory
 ---
     $ ansible-playbook -e dbs_hostname=node3 bootstrap.yml
@@ -41,4 +36,10 @@ clone project from github
 - raspi will be configured and rebooted, then it will be accessible with
 ---
     $ ssh pirate@node3
+---
+    $ ansible-playbook -e dbs_hostname=node3 k8s.yml
+---
+- raspi will be configured as k8s node, then it will be visible with
+---
+    $ kubectl get nodes
 ---
