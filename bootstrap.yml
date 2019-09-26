@@ -1,6 +1,15 @@
 ---
+- hosts: localhost
+  connection: local
+  become: false
+  roles:
+    - local
+
 - hosts: black-pearl
+  gather_facts: no
   become: true
 
   roles:
+    - common
     - hypriot_bootstrap
+

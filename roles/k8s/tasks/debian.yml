@@ -18,6 +18,8 @@
     repo: "{{ k8s_debian_repo_info['repo'] }}"
     state: present
   become: true
+  register: result
+  until: result is successful
 
 - name: debian | Pinning K8s Version
   template:

@@ -1,3 +1,7 @@
-- name: INCLUDE | Configure APT
+- name: MAIN | Configure APT
   include: apt.yml
+
+- name: gathering facts
+  setup:
+  become: false
 

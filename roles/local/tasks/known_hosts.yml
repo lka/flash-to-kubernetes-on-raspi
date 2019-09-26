@@ -1,0 +1,83 @@
+---
+# remove black-pearl and "{{ dbs_hostname }}" from ~/.ssh/known_hosts
+# remove IP of black-pearl from ~/.ssh/known_hosts
+# if black-pearl exists then add it to ~/.ssh/known_hosts
+# if "{{ dbs_name }}" exists then add it to ~/.ssh/known_hosta
+# add ~/.ssh/id_rsa.pub to know_hosts of black-pearl
+# should be executed before and after bootstrap role
+
+- name: KNOWN_HOSTS | get IP Address of black-pearl
+  command: "dig black-pearl.fritz.box A +short"
+  register: _ip_address
+
+- name: KNOWN_HOSTS | get IP Address of "{{ dbs_hostname }}"
+  command: "dig {{ dbs_hostname }}.fritz.box A +short"
+  register: _ip_address
+  when: _ip_address.stdout == ""
+  
+# - name: KNOWN_HOSTS | show IP of black-pearl or {{ dbs_hostname }}
+#   debug: var=_ip_address
+
+- name: KNOWN_HOSTS | remove IP of black-pearl or {{ dbs_hostname }} from known_hosts
+  known_hosts:
+    name: "{{ _ip_address.stdout_lines[0] }}"
+    state: absent
+  ignore_errors: True
+  
+- name: KNOWN_HOSTS | remove black-pearl from known_hosts
+  known_hosts:
+    name: black-pearl.fritz.box
+    state: absent
+
+- name: KNOWN_HOSTS | remove "{{ dbs_hostname }}" from known_hosts
+  known_hosts:
+    name: "{{ dbs_hostname }}.fritz.box"
+    state: absent
+
+- name: KNOWN_HOSTS | get key from black-pearl
+  command: "ssh-keyscan -t ecdsa -T 10 black-pearl.fritz.box"
+  register: bp_key
+  ignore_errors: True
+
+# - name: KNOWN_HOSTS | show key of black-pearl
+#   debug: var=bp_key
+
+- name: KNOWN_HOSTS | add black-pearl ssh-key to local known_hosts
+  known_hosts:
+    name: black-pearl.fritz.box
+    hash_host: True
+    key: "{{ item }}"
+  with_items: '{{ bp_key.stdout_lines|default([]) }}'
+  ignore_errors: True
+
+- name: KNOWN_HOSTS | get key from black-pearl or {{ dbs_hostname }}
+  command: "ssh-keyscan -t ecdsa -T 10 {{ _ip_address.stdout_lines[0] }}"
+  register: bp_key
+
+- name: KNOWN_HOSTS | add IP of black-pearl or {{ dbs_hostname }} ssh-key to local known_hosts
+  known_hosts:
+    name: "{{ _ip_address.stdout_lines[0] }}"
+    hash_host: True
+    key: "{{ item }}"
+  with_items: '{{ bp_key.stdout_lines|default([]) }}'
+  ignore_errors: True
+
+- name: KNOWN_HOSTS | get key from "{{ dbs_hostname }}"
+  command: "ssh-keyscan -t ecdsa -H {{ dbs_hostname }}.fritz.box"
+  register: bp_key
+
+# - name: KNOWN_HOSTS | show key of "{{ dbs_hostname }}"
+#   debug: var=bp_key
+
+- name: KNOWN_HOSTS | add "{{ dbs_hostname }}" ssh-key to local known_hosts
+  known_hosts:
+    name: "{{ dbs_hostname }}.fritz.box"
+    hash_host: True
+    key: "{{ item }}"
+  with_items: '{{ bp_key.stdout_lines|default([]) }}'
+  ignore_errors: True
+
+- name: KNOWN_HOSTS | copy local public key to the black-pearl or {{ dbs_hostname }} authorized_keys
+  command: "sshpass -p hypriot ssh-copy-id -i ~/.ssh/id_rsa.pub pirate@{{ _ip_address.stdout_lines[0] }}" # black-pearl.fritz.box"
+  ignore_errors: True
+

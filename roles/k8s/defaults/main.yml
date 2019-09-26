@@ -11,10 +11,21 @@ dbs_set_iptables: true
 # -------------------------
 # Kubernetes Setup
 # -------------------------
+k8s_admin_config: /etc/kubernetes/admin.conf
+
+k8s_advertise_address_int: eth0
+
+k8s_advertise_bind_port: 6443
+
+k8s_cluster_group: nodes
+
+k8s_cluster_init_skip_ca_verification: true
+
 k8s_debian_packages:
   - kubelet
   - kubeadm
   - kubectl
+  - kubernetes-cni
 
 k8s_debian_repo_info:
   key: "{{ k8s_package_url }}/apt/doc/apt-key.gpg"
@@ -22,7 +33,10 @@ k8s_debian_repo_info:
 
 k8s_package_url: https://packages.cloud.google.com
 
-k8s_version: 1.15.3
+k8s_version: 1.13.2
+k8s_cni_version: 0.6.0
 
 
-
+# Defines services which should be enabled on boot
+k8s_services:
+  - kubelet

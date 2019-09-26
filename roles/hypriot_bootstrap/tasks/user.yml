@@ -1,9 +1,9 @@
 ---
-- name: AUTHORIZED_KEY | Install SSH public key to pirate user
+- name: USER | Install SSH public key to pirate user
   authorized_key: user="{{ ansible_user }}" key="{{ dbs_ssh_pubkey }}"
   when: dbs_ssh_pubkey is defined
 
-- name: COPY | Set .bashrc to my configuration
+- name: USER | Set .bashrc to my configuration
   copy:
     src: files/bashrc
     dest: "/home/{{ ansible_user }}/.bashrc"

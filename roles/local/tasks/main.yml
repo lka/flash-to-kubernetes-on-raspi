@@ -1,0 +1,11 @@
+---
+- name: MAIN | Check Parameters
+  include: ../../hypriot_bootstrap/tasks/check-parameters.yml
+
+- name: MAIN | remove from known_hosts
+  include: known_hosts.yml
+
+# - name: gathering facts
+#   setup:
+#   become: false
+

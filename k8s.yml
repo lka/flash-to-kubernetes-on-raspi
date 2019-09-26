@@ -1,5 +1,17 @@
 ---
-- hosts: node3
+- hosts: localhost
+  connection: local
+  roles:
+    - local
+
+  tasks:
+  - add_host:
+      name: "{{ dbs_hostname }}"
+      groups: working_group
+    changed_when: false
+
+- hosts: working_group
+  gather_facts: False
   become: true
 
   roles:

@@ -3,6 +3,24 @@
   include: iptables.yml
   when: dbs_set_iptables
 
+- name: INCLUDE | Find master
+  include: set_facts.yml
+
 - name: INCLUDE | Install debian Packages for kubernetes
   include: debian.yml
+  when: ansible_os_family == "Debian"
 
+- name: INCLUDE | ensure services are running
+  include: services.yml
+
+- name: INCLUDE | disable swap
+  include: swap.yml
+
+- name: INCLUDE | set network
+  include: network.yml
+
+- name: INCLUDE | Initialize cluster
+  include: init_cluster.yml
+
+- name: INCLUDE | Join cluster
+  include: join_cluster.yml

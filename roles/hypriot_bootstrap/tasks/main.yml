@@ -1,36 +1,33 @@
 ---
-- name: INCLUDE | Check Parameters
+- name: MAIN | Check Parameters
   include: check-parameters.yml
 
-- name: INCLUDE | Prepare system
+- name: MAIN | Prepare system
   include: prepare.yml
 
-- name: INCLUDE | Set hostname
+- name: MAIN | Set hostname
   include: hostname.yml
   when: dbs_set_hostname
 
-- name: INCLUDE | Manage system users
+- name: MAIN | Manage system users
   include: user.yml
 
-- name: INCLUDE | Configure APT
-  include: apt.yml
-
-- name: INCLUDE | Configure DNS cache
+- name: MAIN | Configure DNS cache
   include: unbound.yml
   when: dbs_use_unbound
 
-- name: INCLUDE | Set timezone
+- name: MAIN | Set timezone
   include: timezone.yml
   when: dbs_set_timezone
 
-- name: INCLUDE | Manage locales
+- name: MAIN | Manage locales
   include: locale.yml
   when: dbs_set_locale
 
-- name: INCLUDE | Install NTP damon
+- name: MAIN | Install NTP damon
   include: ntp.yml
   when: dbs_set_ntp
 
-- name: INCLUDE | Misc system configuration
+- name: MAIN | Misc system configuration
   include: system.yml
 

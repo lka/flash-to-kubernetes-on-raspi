@@ -1,5 +1,5 @@
 ---
-- name: SSH login speedup, add disabling lines
+- name: SYSTEM | SSH login speedup, add disabling lines
   lineinfile:
     path: /etc/ssh/sshd_config
     line: "{{ item }}"
@@ -10,7 +10,7 @@
     - "PasswordAuthentication no"
   notify: restart ssh
 
-- name: SSH login speedup, remove enabling lines
+- name: SYSTEM | SSH login speedup, remove enabling lines
   lineinfile:
     path: /etc/ssh/sshd_config
     regexp: "{{ item }}"
