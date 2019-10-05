@@ -9,6 +9,8 @@
       name: "{{ dbs_hostname }}"
       groups: working_group
     changed_when: false
+    tags:
+      - always
 
 - hosts: working_group
   gather_facts: False

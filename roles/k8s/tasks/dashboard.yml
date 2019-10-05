@@ -1,0 +1,56 @@
+---
+- name: dashboard | Checking For Existing Dashboard
+  shell: "kubectl get pods --all-namespaces | grep dashboard"
+  register: _k8s_dashboard
+  failed_when: (_k8s_dashboard['rc'] > 1)
+  changed_when: false
+#   when: inventory_hostname == k8s_master
+  delegate_to: localhost
+  become: false
+
+- name: dashboard | Loading K8s Dashboard
+  command: "kubectl apply -f {{ k8s_dashboard }}"
+  when:
+    - inventory_hostname == k8s_master
+    - _k8s_dashboard['rc'] == 1
+  delegate_to: localhost
+  become: false
+
+- name: dashboard | Copy file to localhost/tmp
+  copy:
+    src: cluster-role-binding.yaml
+    dest: /tmp/
+  delegate_to: localhost
+  become: false
+  tags:
+    - 'k8s_get_dashboard'
+
+- name: dashboard | apply rights
+  command: "kubectl apply -f /tmp/cluster-role-binding.yaml"
+  delegate_to: localhost
+  become: false
+  when: inventory_hostname == k8s_master
+  tags:
+    - 'k8s_get_dashboard'
+
+# - name: dashboard | debug get services
+#   debug: var=(_k8s_get_services_all['stdout']|from_json)['items']
+#   tags:
+#     - 'k8s_get_dashboard'
+
+# - name: dashboard | debug get dashboard link
+#   debug: var=k8s_reports['display_dashboard_link']
+#   tags:
+#     - 'k8s_get_dashboard'
+
+- name: dashboard | Dashboard
+  debug:
+    msg: "{{ lookup('template', 'k8s_dashboard.j2') }}"
+  when:
+    - inventory_hostname == k8s_master
+    - _k8s_get_services_all is defined
+    - k8s_reports['display_dashboard_link']|bool
+    - _k8s_dashboard['rc'] == 0
+  tags:
+    - 'k8s_get_dashboard'
+

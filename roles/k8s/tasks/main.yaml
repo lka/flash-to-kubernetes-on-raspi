@@ -1,26 +1,69 @@
 ---
-- name: INCLUDE | Configure Iptables
+- name: MAIN | Configure Iptables
   include: iptables.yml
   when: dbs_set_iptables
 
-- name: INCLUDE | Find master
+- name: MAIN | Find master
   include: set_facts.yml
+  tags:
+    - k8s_cluster_ip
+    - k8s_cluster_nodes
+    - k8s_cluster_services
+    - k8s_dashboard
+    - k8s_get_dashboard
+    - k8s_pods
 
-- name: INCLUDE | Install debian Packages for kubernetes
+- name: MAIN | Install debian Packages for kubernetes
   include: debian.yml
   when: ansible_os_family == "Debian"
 
-- name: INCLUDE | ensure services are running
+- name: MAIN | ensure services are running
   include: services.yml
 
-- name: INCLUDE | disable swap
+- name: MAIN | disable swap
   include: swap.yml
 
-- name: INCLUDE | set network
+- name: MAIN | Initialize cluster
+  include: init_cluster.yml
+  tags:
+    - k8s_cluster_services
+    - k8s_pods
+
+- name: MAIN | set network
   include: network.yml
 
-- name: INCLUDE | Initialize cluster
-  include: init_cluster.yml
-
-- name: INCLUDE | Join cluster
+- name: MAIN | Join cluster
   include: join_cluster.yml
+  when: inventory_hostname != k8s_master
+
+- name: MAIN | cluster nodes
+  include: cluster_summary.yml
+  tags:
+    - k8s_cluster_nodes
+
+- name: MAIN | get cluster services
+  include: cluster_services.yml
+  tags:
+    - k8s_cluster_services
+  when:
+    - inventory_hostname == k8s_master
+    - k8s_cluster_init|bool
+
+- name: MAIN | get dashboard
+  include: dashboard.yml
+  tags:
+    - k8s_dashboard|bool
+    - k8s_get_dashboard
+
+- name: MAIN | get pods
+  include: pods.yml
+  tags:
+    - k8s_pods
+  when:
+    - inventory_hostname == k8s_master
+    - k8s_cluster_init|bool
+
+- name: MAIN | reset_cluster
+  include: reset_cluster.yml
+  when: k8s_reset_cluster|bool
+

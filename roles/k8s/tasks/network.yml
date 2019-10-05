@@ -28,12 +28,13 @@
         ("Running" in _k8s_kube_dns_running['stdout'])
 
 - name: network | Capturing Cluster-IP On Master
-  command: kubectl --kubeconfig {{ k8s_admin_config }} get svc -o json
+  command: kubectl get svc -o json
   register: _k8s_cluster_ip
   changed_when: false
   tags:
     - k8s_cluster_ip
   delegate_to: localhost
+  become: false
 #  when: inventory_hostname == k8s_master
 
 - name: network | Setting Cluster-IP On Master

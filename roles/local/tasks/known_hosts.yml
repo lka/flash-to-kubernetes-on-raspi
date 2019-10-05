@@ -9,16 +9,23 @@
 - name: KNOWN_HOSTS | get IP Address of black-pearl
   command: "dig black-pearl.fritz.box A +short"
   register: _ip_address
+  when: inventory_hostname == 'black-pearl'
 
+# - name: KNOWN_HOSTS | show IP of black-pearl
+#   debug: var=_ip_address
+
+- name: KNOWN_HOSTS | remove IP of black-pearl
+  known_hosts:
+    name: "{{ _ip_address.stdout_lines[0] }}"
+    state: absent
+  ignore_errors: True
+  when: inventory_hostname == 'black-pearl'
+  
 - name: KNOWN_HOSTS | get IP Address of "{{ dbs_hostname }}"
   command: "dig {{ dbs_hostname }}.fritz.box A +short"
   register: _ip_address
-  when: _ip_address.stdout == ""
   
-# - name: KNOWN_HOSTS | show IP of black-pearl or {{ dbs_hostname }}
-#   debug: var=_ip_address
-
-- name: KNOWN_HOSTS | remove IP of black-pearl or {{ dbs_hostname }} from known_hosts
+- name: KNOWN_HOSTS | remove IP of {{ dbs_hostname }} from known_hosts
   known_hosts:
     name: "{{ _ip_address.stdout_lines[0] }}"
     state: absent
@@ -38,6 +45,7 @@
   command: "ssh-keyscan -t ecdsa -T 10 black-pearl.fritz.box"
   register: bp_key
   ignore_errors: True
+  when: inventory_hostname == 'black-pearl'
 
 # - name: KNOWN_HOSTS | show key of black-pearl
 #   debug: var=bp_key
@@ -49,9 +57,10 @@
     key: "{{ item }}"
   with_items: '{{ bp_key.stdout_lines|default([]) }}'
   ignore_errors: True
+  when: inventory_hostname == 'black-pearl'
 
-- name: KNOWN_HOSTS | get key from black-pearl or {{ dbs_hostname }}
-  command: "ssh-keyscan -t ecdsa -T 10 {{ _ip_address.stdout_lines[0] }}"
+- name: KNOWN_HOSTS | get key from {{ dbs_hostname }}
+  command: "ssh-keyscan -t ecdsa -T 10 {{ dbs_hostname }}.fritz.box"
   register: bp_key
 
 - name: KNOWN_HOSTS | add IP of black-pearl or {{ dbs_hostname }} ssh-key to local known_hosts
@@ -76,6 +85,11 @@
     key: "{{ item }}"
   with_items: '{{ bp_key.stdout_lines|default([]) }}'
   ignore_errors: True
+
+- name: KNOWN_HOSTS | copy local public key to the black-pearl authorized_keys
+  command: "sshpass -p hypriot ssh-copy-id -i ~/.ssh/id_rsa.pub pirate@black-pearl.fritz.box"
+  ignore_errors: True
+  when: inventory_hostname == 'black-pearl'
 
 - name: KNOWN_HOSTS | copy local public key to the black-pearl or {{ dbs_hostname }} authorized_keys
   command: "sshpass -p hypriot ssh-copy-id -i ~/.ssh/id_rsa.pub pirate@{{ _ip_address.stdout_lines[0] }}" # black-pearl.fritz.box"

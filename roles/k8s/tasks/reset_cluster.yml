@@ -1,0 +1,16 @@
+---
+- name: reset_cluster | debug inventory_hostname
+  debug: 
+    var: inventory_hostname
+  tags:
+    - k8s_reset
+
+- name: reset_cluster | Resetting Cluster
+  command: kubeadm reset -f
+  become: true
+  tags:
+    - k8s_reset
+  when:
+    - k8s_reset_cluster|bool
+    - inventory_hostname in groups['nodes']
+

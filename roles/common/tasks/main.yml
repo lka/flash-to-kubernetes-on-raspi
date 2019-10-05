@@ -4,4 +4,5 @@
 - name: gathering facts
   setup:
   become: false
-
+  tags:
+    - always
