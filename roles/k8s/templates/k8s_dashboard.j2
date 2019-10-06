@@ -1,10 +1,11 @@
 {% if _k8s_get_services_all is defined and k8s_reports['display_dashboard_link'] %}
+you have to start kubectl proxy
 {%   for item in (_k8s_get_services_all['stdout']|from_json)['items'] %}
 {%     if item['metadata']['name'] == 'kubernetes-dashboard' %}
 Kubernetes Dashboard Can be reached at: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/overview?namespace=kube-system
 # Kubernetes Dashboard Can be reached at: http://localhost:8001/{{ item['metadata']['selfLink'] }}:https:kubernetes-dashboard:/proxy/#!/overview?namespace=kube-system
-before this you have to start kubectl proxy
 {%     endif %}
 {%   endfor %}
+Kubernetes Dashboard Token: {{ _k8s_admin_user_token['stdout'] }}
 {% endif %}
 

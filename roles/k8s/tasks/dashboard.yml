@@ -43,6 +43,14 @@
 #   tags:
 #     - 'k8s_get_dashboard'
 
+- name: dashboard | get Admin Token for dashboard
+  shell: "kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}') | grep token: | awk '{print $2}'"
+  register: _k8s_admin_user_token
+  delegate_to: "{{ k8s_master }}"
+  become: false
+  tags:
+    - 'k8s_get_dashboard'
+
 - name: dashboard | Dashboard
   debug:
     msg: "{{ lookup('template', 'k8s_dashboard.j2') }}"
