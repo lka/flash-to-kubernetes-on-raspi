@@ -1,18 +1,19 @@
 ---
-- hosts: localhost
-  connection: local
-  roles:
-    - local
+#- hosts: localhost
+#  connection: local
+#  roles:
+#    - local
 
-  tasks:
-  - add_host:
-      name: "{{ dbs_hostname }}"
-      groups: working_group
-    changed_when: false
-    tags:
-      - always
+#  tasks:
+#  - add_host:
+#      name: "{{ dbs_hostname }}"
+#      groups: working_group
+#    changed_when: false
+#    tags:
+#      - always
 
-- hosts: working_group
+# - hosts: working_group
+- hosts: nodes
   gather_facts: False
   become: true
 

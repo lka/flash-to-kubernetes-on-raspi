@@ -51,9 +51,9 @@
   tags:
     - 'k8s_get_dashboard'
 
-- name: dashboard | Dashboard
+- name: dashboard | Dashboard Access
   debug:
-    msg: "{{ lookup('template', 'k8s_dashboard.j2') }}"
+    msg: "start 'kubectl proxy' then Kubernetes Dashboard can be reached with: http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#/overview?namespace=_all"
   when:
     - inventory_hostname == k8s_master
     - _k8s_get_services_all is defined
@@ -61,4 +61,26 @@
     - _k8s_dashboard['rc'] == 0
   tags:
     - 'k8s_get_dashboard'
+
+- name: dashboard | Dashboard Access token
+  debug:
+    msg: "Kubernetes Dashboard Token is: {{ _k8s_admin_user_token['stdout'] }}"
+  when:
+    - inventory_hostname == k8s_master
+    - _k8s_get_services_all is defined
+    - k8s_reports['display_dashboard_link']|bool
+    - _k8s_dashboard['rc'] == 0
+  tags:
+    - 'k8s_get_dashboard'
+
+#- name: dashboard | Dashboard
+#  debug:
+#    msg: "{{ lookup('template', 'k8s_dashboard.j2') }}"
+#  when:
+#    - inventory_hostname == k8s_master
+#    - _k8s_get_services_all is defined
+#    - k8s_reports['display_dashboard_link']|bool
+#    - _k8s_dashboard['rc'] == 0
+#  tags:
+#    - 'k8s_get_dashboard'
 

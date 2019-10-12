@@ -43,3 +43,5 @@ clone project from github
 ---
     $ kubectl get nodes
 ---
+- reset cluster (all nodes and master)
+    $ ansible-playbook k8s.yml --tags k8s_reset -e "k8s_reset_cluster=true"

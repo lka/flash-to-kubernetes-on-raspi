@@ -13,3 +13,17 @@
     - common
     - hypriot_bootstrap
 
+- hosts: localhost
+  connection: local
+  become: false
+  roles:
+    - local
+
+#  tasks:
+#  - add_host:
+#      name: "{{ dbs_hostname }}"
+#      groups: working_group
+#    changed_when: false
+#    tags:
+#      - always
+

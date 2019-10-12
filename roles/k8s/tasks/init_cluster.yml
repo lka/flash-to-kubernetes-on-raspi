@@ -88,17 +88,42 @@
   become: false
   when: inventory_hostname == k8s_master
 
+- name: init_cluster | Get Token
+  shell: "kubeadm token list | awk '{print $1}' | tail -1"
+  register: _k8s_token
+  become: true
+  changed_when: false
+#  no_log: true
+  delegate_to: "{{ k8s_master }}"
+
+- name: init_cluster | Show old token
+  debug:
+    var: _k8s_token
+
+- name: init_cluster | Setting Token 1
+  set_fact:
+    k8s_token: "{{ _k8s_token['stdout_lines'][0] }}"
+#  no_log: true
+  when: (_k8s_token['stdout_lines'][0] != 'TOKEN')
+
 - name: init_cluster | create Token
   command: kubeadm token create
   register: _k8s_token
+  become: true
   changed_when: false
-  no_log: true
+#  no_log: true
   delegate_to: "{{ k8s_master }}"
+  when: (_k8s_token['stdout_lines'][0] == 'TOKEN')
 
-- name: init_cluster | Setting Token
+#- name: init_cluster | Show new token
+#  debug:
+#    var: _k8s_token
+
+- name: init_cluster | Setting Token 2
   set_fact:
     k8s_token: "{{ _k8s_token['stdout_lines'][0] }}"
-  no_log: true
+#  no_log: true
+  when: (_k8s_token.changed == True)
 
 # - name: init_cluster | Saving Token On Master
 #   template:

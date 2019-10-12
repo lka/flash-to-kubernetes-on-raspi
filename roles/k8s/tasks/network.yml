@@ -57,6 +57,15 @@
   tags:
     - k8s_cluster_ip
 
+- name: network | Setting State Of Cluster
+  set_fact:
+    k8s_cluster_init: true
+  tags:
+    - k8s_cluster_ip
+  when: >
+        not k8s_cluster_init and
+        k8s_cluster_ip is defined
+
 - name: network | Checking For Cluster-IP Route On Hosts
   shell: "route -n | awk '{print $1}' | grep {{ k8s_cluster_ip }}"
   become: true

@@ -14,3 +14,14 @@
     - k8s_reset_cluster|bool
     - inventory_hostname in groups['nodes']
 
+- name: reset_cluster | delete directory .kube if it exists
+  file:
+    path: ~/.kube
+    state: absent
+  become: false
+  tags:
+    - k8s_reset
+  when:
+    - k8s_reset_cluster|bool
+    - inventory_hostname == k8s_master
+
