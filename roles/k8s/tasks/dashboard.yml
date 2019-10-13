@@ -22,6 +22,9 @@
     dest: /tmp/
   delegate_to: localhost
   become: false
+  when:
+    - inventory_hostname == k8s_master
+    - _k8s_dashboard['rc'] == 1
   tags:
     - 'k8s_get_dashboard'
 
@@ -29,9 +32,20 @@
   command: "kubectl apply -f /tmp/cluster-role-binding.yaml"
   delegate_to: localhost
   become: false
-  when: inventory_hostname == k8s_master
+  when:
+    - inventory_hostname == k8s_master
+    - _k8s_dashboard['rc'] == 1
   tags:
     - 'k8s_get_dashboard'
+
+- name: dashboard | Checking For Existing Dashboard Step 2
+  shell: "kubectl get pods --all-namespaces | grep dashboard"
+  register: _k8s_dashboard
+  failed_when: (_k8s_dashboard['rc'] > 0)
+  changed_when: false
+#   when: inventory_hostname == k8s_master
+  delegate_to: localhost
+  become: false
 
 # - name: dashboard | debug get services
 #   debug: var=(_k8s_get_services_all['stdout']|from_json)['items']

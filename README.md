@@ -31,15 +31,17 @@ clone project from github
 - boot raspberry pi with flash-card inserted
 - dive into ansible directory
 ---
+- configure each raspi with ist name f.e. node3
     $ ansible-playbook -e dbs_hostname=node3 bootstrap.yml
 ---
 - raspi will be configured and rebooted, then it will be accessible with
 ---
     $ ssh pirate@node3
 ---
-    $ ansible-playbook -e dbs_hostname=node3 k8s.yml
+- create cluster with all nodes
+    $ ansible-playbook k8s.yml
 ---
-- raspi will be configured as k8s node, then it will be visible with
+- raspis will be configured as k8s nodes, then they will be visible with
 ---
     $ kubectl get nodes
 ---
