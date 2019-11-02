@@ -48,7 +48,6 @@
 - name: update | increment current version to next version
   set_fact:
     k8s_next_version: "1.{{ k8s_current_version | regex_replace('([0-9]{1})\\.([0-9]{2}).*', '\\2') | int + 1 }}.0-00"
-  when: (inventory_hostname == k8s_master)
 
 - debug:
     msg: "{{ k8s_next_version }}"
