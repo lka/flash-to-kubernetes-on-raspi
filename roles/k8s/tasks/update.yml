@@ -6,27 +6,23 @@
   become: false
   changed_when: false
   tags: k8s_update
-  when: (inventory_hostname == k8s_master)
 
 - name: update | Show current version
   debug:
     msg: "{{ _k8s_current_version['stdout_lines'][0] }}"
   when: (inventory_hostname == k8s_master)
 
-#  when: _k8s_current_version.changed == True
-
 - name: update | Setting current version
   set_fact:
     k8s_current_version: "{{ _k8s_current_version['stdout_lines'][0] }}"
-  when: (inventory_hostname == k8s_master)
 
 - name: update | Checking if updates are available
   shell: 'apt-cache policy kubeadm | grep "1.[0-9+][0-9+]." | sort | sed -e "s/^[ ]*//"  | awk ''{print $1}'' | sort -nk 2 -t "." | tail -1'
   register: _k8s_newest_version
   become: false
   changed_when: false
+  delegate_to: "{{ k8s_master }}"
   tags: k8s_update
-  when: (inventory_hostname == k8s_master)
 
 - name: update | Show newest version
   debug:
@@ -36,19 +32,30 @@
 - name: update | Setting newest version
   set_fact:
     k8s_newest_version: "{{ _k8s_newest_version['stdout_lines'][0] }}"
-  when: (inventory_hostname == k8s_master)
 
 - name: update | is update available
   debug:
     msg: "Newer version is available"
   when: >
-        (k8s_newest_version is version_compare(k8s_current_version, 'gt')) and
-        (inventory_hostname == k8s_master)
+        (inventory_hostname == k8s_master) and
+        (k8s_newest_version is version_compare(k8s_current_version, 'gt'))
 
-- name: update | increment current version to next version
+- name: update | increment current version to next minor version
   set_fact:
-    k8s_next_version: "1.{{ k8s_current_version | regex_replace('([0-9]{1})\\.([0-9]{2}).*', '\\2') | int + 1 }}.0-00"
-  when: (inventory_hostname == k8s_master)
+    k8s_next_version: "1.{{ k8s_current_version | regex_replace('([0-9]{1})\\.([0-9]{2}).*', '\\2') | int + 1 }}"
+
+- name: update | find next minor version with latest release
+  shell: 'apt-cache policy kubeadm | grep "1.[0-9+][0-9+]." | sort | sed -e "s/^[ ]*//"  | awk ''{print $1}'' | grep "{{ k8s_next_version }}" | sort -nk 2 -t "." | tail -1'
+  register: _k8s_next_version
+  delegate_to: "{{ k8s_master }}"
+  tags: k8s_update
 
 - debug:
-    msg: "{{ k8s_next_version }}"
+    var: _k8s_next_version
+
+- name: update | set next version with latest release
+  set_fact:
+    k8s_next_version: "{{ _k8s_next_version['stdout_lines'][0] }}"
+
+- debug:
+    var: hostvars[k8s_master]["k8s_next_version"]
