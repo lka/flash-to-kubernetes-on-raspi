@@ -39,6 +39,7 @@ clone project from github
     $ ssh pirate@node3
 ---
 - create cluster with all nodes
+---
     $ ansible-playbook k8s.yml
 ---
 - raspis will be configured as k8s nodes, then they will be visible with

@@ -1,0 +1,49 @@
+---
+# are there updates available
+- name: update | Current Version of kubernetes is
+  shell: 'apt-cache policy kubeadm | grep "\*\*\*" | awk ''{print $2}'''
+  register: _k8s_current_version
+  become: false
+  changed_when: false
+  tags: k8s_update
+  when: (inventory_hostname == k8s_master)
+
+- name: update | Show current version
+  debug:
+    var: _k8s_current_version['stdout_lines'][0]
+  when: (inventory_hostname == k8s_master)
+
+#  when: _k8s_current_version.changed == True
+
+- name: update | Setting current version
+  set_fact:
+    k8s_current_version: k8s_current_version['stdout_lines'][0]
+  when: (inventory_hostname == k8s_master)
+
+- name: update | Checking if updates are available
+  shell: 'apt-cache policy kubeadm | grep "1.[0-9+][0-9+]." | sort | sed -e "s/^[ ]*//"  | awk ''{print $1}'' | sort -nk 2 -t "." | tail -1'
+  register: _k8s_newest_version
+  become: false
+  changed_when: false
+  tags: k8s_update
+  when: (inventory_hostname == k8s_master)
+
+- name: update | Show newest version
+  debug:
+    var: _k8s_newest_version['stdout_lines'][0]
+  when: (inventory_hostname == k8s_master)
+
+- name: update | Setting newest version
+  set_fact:
+    k8s_newest_version: _k8s_newest_version['stdout_lines'][0]
+  when: (inventory_hostname == k8s_master)
+
+- name: update | is update available
+  debug:
+    msg: "Newer version is available"
+  when: >
+        (k8s_current_version  is version('1.16.3-00', operator='gt')) and
+        (inventory_hostname == k8s_master)
+
+#        (k8s_current_version  is version(k8s_newest_version, operator='gt')) and
+

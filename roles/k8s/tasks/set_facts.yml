@@ -5,6 +5,7 @@
   tags:
     - k8s_get_dashboard
     - k8s_reset
+    - k8s_update
 
 - name: set_facts | Showing K8s Master
   debug: var=k8s_master

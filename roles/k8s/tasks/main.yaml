@@ -67,3 +67,8 @@
   include: reset_cluster.yml
   when: k8s_reset_cluster|bool
 
+- name: MAIN | update cluster
+  include: update.yml
+  when:
+    - inventory_hostname == k8s_master
+  tags: k8s_update
