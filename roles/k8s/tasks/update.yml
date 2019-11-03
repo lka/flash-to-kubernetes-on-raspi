@@ -5,37 +5,48 @@
   register: _k8s_current_version
   become: false
   changed_when: false
-  tags: k8s_update
 
 - name: update | Show current version
   debug:
     msg: "{{ _k8s_current_version['stdout_lines'][0] }}"
-  when: (inventory_hostname == k8s_master)
 
 - name: update | Setting current version
   set_fact:
     k8s_current_version: "{{ _k8s_current_version['stdout_lines'][0] }}"
 
+- name: update | init check whether all versions are identical
+  set_fact: 
+    k8s_versions_identical: false
+    k8s_next_version: "{{ k8s_current_version }}"
+    k8s_update_available: false
+  run_once: true
+  delegate_to: "{{ k8s_master }}"
+
+- name: update | check whether all versions are identical ::: ToDo: here it's wrong
+  set_fact: k8s_versions_identical="{{ hostvars[k8s_master]["k8s_current_version"] is version_compare(k8s_current_version) }}"
+  run_once: true
+  when: inventory_hostname != k8s_master
+  loop: "{{ ansible_play_batch }}"
+
 - name: update | Checking if updates are available
   shell: 'apt-cache policy kubeadm | grep "1.[0-9+][0-9+]." | sort | sed -e "s/^[ ]*//"  | awk ''{print $1}'' | sort -nk 2 -t "." | tail -1'
   register: _k8s_newest_version
   become: false
-  changed_when: false
+  run_once: true
   delegate_to: "{{ k8s_master }}"
-  tags: k8s_update
 
 - name: update | Show newest version
   debug:
     msg: "{{ _k8s_newest_version['stdout_lines'][0] }}"
-  when: (inventory_hostname == k8s_master)
+  run_once: true
 
 - name: update | Setting newest version
   set_fact:
     k8s_newest_version: "{{ _k8s_newest_version['stdout_lines'][0] }}"
+  run_once: true
 
 - name: update | is update available
-  debug:
-    msg: "Newer version is available"
+  set_fact: k8s_update_available=true
   when: >
         (inventory_hostname == k8s_master) and
         (k8s_newest_version is version_compare(k8s_current_version, 'gt'))
@@ -43,19 +54,53 @@
 - name: update | increment current version to next minor version
   set_fact:
     k8s_next_version: "1.{{ k8s_current_version | regex_replace('([0-9]{1})\\.([0-9]{2}).*', '\\2') | int + 1 }}"
+  when: k8s_versions_identical == true
 
 - name: update | find next minor version with latest release
   shell: 'apt-cache policy kubeadm | grep "1.[0-9+][0-9+]." | sort | sed -e "s/^[ ]*//"  | awk ''{print $1}'' | grep "{{ k8s_next_version }}" | sort -nk 2 -t "." | tail -1'
   register: _k8s_next_version
   delegate_to: "{{ k8s_master }}"
-  tags: k8s_update
-
-- debug:
-    var: _k8s_next_version
+  when: k8s_versions_identical == true
 
 - name: update | set next version with latest release
   set_fact:
     k8s_next_version: "{{ _k8s_next_version['stdout_lines'][0] }}"
+  delegate_to: "{{ k8s_master }}"
+  run_once: true
+  when: k8s_versions_identical == true
 
 - debug:
-    var: hostvars[k8s_master]["k8s_next_version"]
+    msg: "next version is {{ k8s_next_version }}"
+
+- debug:
+    var: k8s_versions_identical
+
+- name: update | remove pinned versions of kubernetes on first control plane
+  file: 
+    path: /etc/apt/preferences.d/k8s.pref
+    state: absent
+  when: >
+        (k8s_versions_identical == true) and
+        (k8s_update_available == true) and
+        (inventory_hostname == k8s_master)
+
+- name: update | update first control plane
+  shell: "apt-mark unhold kubeadm kubelet kubernetes-cni && \
+            apt-get update && apt-get install -y kubeadm={{ k8s_next_version }} && \
+            apt-mark hold kubeadm"
+  when: >
+        (k8s_versions_identical == true) and
+        (k8s_update_available == true) and
+        (inventory_hostname == k8s_master)
+
+- name: update | check first control plane
+  shell: "kubeadm upgrade plan"
+  register: result
+  until: result.rc == 0
+  retries: 5
+  delay: 10
+  when: >
+        (k8s_versions_identical == true) and
+        (k8s_update_available == true) and
+        (inventory_hostname == k8s_master)
+
