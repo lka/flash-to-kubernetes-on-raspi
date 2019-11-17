@@ -47,6 +47,7 @@ k8s_reports:
   display_dashboard_link: true
 
 k8s_reset_cluster: false
+k8s_upgrade_cluster: false
 
 # Defines services which should be enabled on boot
 k8s_services:

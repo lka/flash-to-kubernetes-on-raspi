@@ -33,7 +33,7 @@
 #           --token {{ k8s_token }}
   register: _k8s_cluster_master_init
   become: true
-  no_log: true
+#  no_log: true
   when: >
         (inventory_hostname == k8s_master) and
         not k8s_cluster_init
@@ -99,6 +99,7 @@
 - name: init_cluster | Show old token
   debug:
     var: _k8s_token
+  become: false
 
 - name: init_cluster | Setting Token 1
   set_fact:
@@ -113,7 +114,7 @@
   changed_when: false
 #  no_log: true
   delegate_to: "{{ k8s_master }}"
-  when: (_k8s_token['stdout_lines'][0] == 'TOKEN')
+  when: ((_k8s_token['stdout_lines'][0] == 'TOKEN') or (_k8s_token['stdout_lines'][0] == '' ))
 
 #- name: init_cluster | Show new token
 #  debug:

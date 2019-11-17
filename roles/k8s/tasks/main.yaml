@@ -12,6 +12,7 @@
     - k8s_dashboard
     - k8s_get_dashboard
     - k8s_pods
+    - k8s_upgrade
 
 - name: MAIN | Install debian Packages for kubernetes
   include: debian.yml
@@ -69,4 +70,7 @@
 
 - name: MAIN | update cluster
   include: update.yml
-  tags: k8s_update
+  tags:
+    - k8s_upgrade
+  when: k8s_upgrade_cluster|bool == true
+

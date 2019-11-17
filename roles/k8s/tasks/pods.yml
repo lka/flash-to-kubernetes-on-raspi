@@ -1,4 +1,9 @@
 ---
+- name: pods | Wait 10 seconds for all pods becoming available
+  pause:
+    seconds: 10
+  when: k8s_reports['all_pod_namespaces']
+
 - name: pods | Capture Pods In All Namespaces
   command: >
     kubectl get pods --all-namespaces -o json

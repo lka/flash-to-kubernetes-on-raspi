@@ -8,6 +8,7 @@
 - name: reset_cluster | Resetting Cluster
   command: kubeadm reset -f
   become: true
+  ignore_errors: true
   tags:
     - k8s_reset
   when:
@@ -48,3 +49,35 @@
   when:
     - k8s_reset_cluster|bool
     - inventory_hostname == k8s_master
+
+- name: debian | remove Pinning K8s Version
+  file:
+    path: /etc/apt/preferences.d/k8s.pref
+    state: absent
+  become: true
+  tags:
+    - k8s_reset
+  when:
+    - k8s_reset_cluster|bool
+
+- name: reset_cluster | unmark kubernetes version
+  shell: "apt-mark unhold kubeadm kubelet kubectl kubernetes-cni" 
+  become: true
+  tags:
+    - k8s_reset
+  when:
+    - k8s_reset_cluster|bool
+
+- name: reset_cluster | uninstalling K8s Packages
+  apt:
+    name: "{{ k8s_debian_packages }}"
+    state: absent
+    purge: yes
+    autoremove: yes
+    update_cache: yes
+  become: true
+  tags:
+    - k8s_reset
+  when:
+    - k8s_reset_cluster|bool
+

@@ -1,106 +1,443 @@
 ---
 # are there updates available
 - name: update | Current Version of kubernetes is
-  shell: 'apt-cache policy kubeadm | grep "\*\*\*" | awk ''{print $2}'''
+  shell: 'apt-cache policy kubeadm | grep "\*\*\*" | awk ''{print $2}'' | awk -F''-'' ''{print $1}'''
   register: _k8s_current_version
   become: false
   changed_when: false
+  when:
+    - k8s_upgrade_cluster|bool
 
 - name: update | Show current version
   debug:
     msg: "{{ _k8s_current_version['stdout_lines'][0] }}"
+  when:
+    - k8s_upgrade_cluster|bool
 
 - name: update | Setting current version
   set_fact:
     k8s_current_version: "{{ _k8s_current_version['stdout_lines'][0] }}"
+  when:
+    - k8s_upgrade_cluster|bool
 
 - name: update | init check whether all versions are identical
   set_fact: 
-    k8s_versions_identical: false
+    k8s_versions_identical: true
     k8s_next_version: "{{ k8s_current_version }}"
     k8s_update_available: false
   run_once: true
   delegate_to: "{{ k8s_master }}"
+  when:
+    - k8s_upgrade_cluster|bool
 
-- name: update | check whether all versions are identical ::: ToDo: here it's wrong
-  set_fact: k8s_versions_identical="{{ hostvars[k8s_master]["k8s_current_version"] is version_compare(k8s_current_version) }}"
+- name: update | get nodes version numbers
+  command: "kubectl get nodes"
+  become: false
+  register: result
   run_once: true
-  when: inventory_hostname != k8s_master
-  loop: "{{ ansible_play_batch }}"
+  delegate_to: "{{ k8s_master }}"
+  when:
+    - k8s_upgrade_cluster|bool
+
+# - name: update | display nodes
+#   debug: msg="{{ res_list | unique | length }}"
+#   vars:
+#     interim_string: "{% for item in result.stdout_lines %}{{ item.split() | last }} {% endfor %}"
+#     res_list: "{{ interim_string.split() }}"
+
+- name: update | check whether all node versions are identical
+  set_fact:
+    k8s_versions_identical: false
+  delegate_to: "{{ item }}"
+  with_items: "{{ play_hosts }}"
+  delegate_facts: True
+  vars:
+    interim_string: "{% for item in result.stdout_lines %}{{ item.split() | last }} {% endfor %}"
+    res_list: "{{ interim_string.split() | unique | length }}"
+  when:
+    - k8s_upgrade_cluster|bool
+    - res_list >= "3"
+
+- name: update | check whether all versions are identical
+  set_fact:
+    k8s_versions_identical: false
+  delegate_to: "{{ item }}"
+  with_items: "{{ play_hosts }}"
+  delegate_facts: True
+  when:
+    - k8s_upgrade_cluster|bool
+    - hostvars[k8s_master]["k8s_current_version"] is not version_compare(hostvars[inventory_hostname]["k8s_current_version"])
+
+# - debug:
+#     msg: "{{ inventory_hostname }}={{ k8s_versions_identical }}"
+
+# - meta: end_play
+
+- name: update | update apt-cache
+  apt: 
+    update_cache: yes
+  become: true
+  when:
+    - k8s_upgrade_cluster|bool
 
 - name: update | Checking if updates are available
-  shell: 'apt-cache policy kubeadm | grep "1.[0-9+][0-9+]." | sort | sed -e "s/^[ ]*//"  | awk ''{print $1}'' | sort -nk 2 -t "." | tail -1'
+  shell: 'apt-cache policy kubeadm | grep "1.[0-9+][0-9+]." | sort | sed -e "s/^[ ]*//"  | awk ''{print $1}'' | sort -nk 2 -t "." | tail -1 | awk -F''-'' ''{print $1}'''
   register: _k8s_newest_version
   become: false
   run_once: true
   delegate_to: "{{ k8s_master }}"
+  when:
+    - k8s_upgrade_cluster|bool
 
 - name: update | Show newest version
   debug:
     msg: "{{ _k8s_newest_version['stdout_lines'][0] }}"
   run_once: true
+  when:
+    - k8s_upgrade_cluster|bool
 
 - name: update | Setting newest version
   set_fact:
     k8s_newest_version: "{{ _k8s_newest_version['stdout_lines'][0] }}"
   run_once: true
+  when:
+    - k8s_upgrade_cluster|bool
 
 - name: update | is update available
   set_fact: k8s_update_available=true
-  when: >
-        (inventory_hostname == k8s_master) and
-        (k8s_newest_version is version_compare(k8s_current_version, 'gt'))
+  run_once: true
+  when:
+    - inventory_hostname == k8s_master
+    - k8s_newest_version is version_compare(k8s_current_version, 'gt')
+    - k8s_upgrade_cluster|bool
 
 - name: update | increment current version to next minor version
   set_fact:
     k8s_next_version: "1.{{ k8s_current_version | regex_replace('([0-9]{1})\\.([0-9]{2}).*', '\\2') | int + 1 }}"
-  when: k8s_versions_identical == true
+  when:
+    - k8s_versions_identical == true
+    - k8s_upgrade_cluster|bool
 
 - name: update | find next minor version with latest release
-  shell: 'apt-cache policy kubeadm | grep "1.[0-9+][0-9+]." | sort | sed -e "s/^[ ]*//"  | awk ''{print $1}'' | grep "{{ k8s_next_version }}" | sort -nk 2 -t "." | tail -1'
+  shell: 'apt-cache policy kubeadm | grep "1.[0-9+][0-9+]." | sort | sed -e "s/^[ ]*//"  | awk ''{print $1}'' | grep "{{ k8s_next_version }}" | sort -nk 2 -t "." | tail -1 | awk -F''-'' ''{print $1}'''
   register: _k8s_next_version
   delegate_to: "{{ k8s_master }}"
-  when: k8s_versions_identical == true
+  when:
+    - k8s_versions_identical == true
+    - k8s_upgrade_cluster|bool
+
+- name: update | set next version to newest
+  set_fact:
+    k8s_next_version: "{{ k8s_newest_version }}"
+    k8s_version: "{{ k8s_newest_version }}"
+  delegate_to: "{{ k8s_master }}"
+  run_once: true
+  delegate_facts: true
+  when:
+    - k8s_versions_identical == true
+    - _k8s_next_version.stdout == ""
+    - k8s_upgrade_cluster|bool
+
+# - debug:
+#     msg: "next version is {{ _k8s_next_version }}"
+#   when:
+#     - k8s_upgrade_cluster|bool
 
 - name: update | set next version with latest release
   set_fact:
     k8s_next_version: "{{ _k8s_next_version['stdout_lines'][0] }}"
+    k8s_version: "{{ _k8s_next_version['stdout_lines'][0] }}"
   delegate_to: "{{ k8s_master }}"
   run_once: true
-  when: k8s_versions_identical == true
+  when:
+    - k8s_versions_identical == true
+    - k8s_upgrade_cluster|bool
+    - _k8s_next_version.stdout > ""
 
-- debug:
-    msg: "next version is {{ k8s_next_version }}"
-
-- debug:
-    var: k8s_versions_identical
+- name: update | show next version to be updated to
+  debug:
+    msg: "next version is {{ k8s_next_version }} is equal to {{ k8s_version }}"
+  when:
+    - k8s_upgrade_cluster|bool
 
 - name: update | remove pinned versions of kubernetes on first control plane
   file: 
     path: /etc/apt/preferences.d/k8s.pref
     state: absent
-  when: >
-        (k8s_versions_identical == true) and
-        (k8s_update_available == true) and
-        (inventory_hostname == k8s_master)
+  when:
+    - k8s_versions_identical == true
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | unhold kubeadm kubelet and kubernetes-cni on first control plane
+  shell: "apt-mark unhold kubeadm kubelet kubectl kubernetes-cni"
+  become: true
+  when:
+    - k8s_versions_identical == true
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | Pinning K8s Versions
+  template:
+    src: etc/apt/preferences.d/k8s.pref.j2
+    dest: /etc/apt/preferences.d/k8s.pref
+  become: true
+  register: _k8s_pinned_version
+  when:
+    - k8s_versions_identical == true
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+ 
+# - meta: end_play
 
 - name: update | update first control plane
-  shell: "apt-mark unhold kubeadm kubelet kubernetes-cni && \
-            apt-get update && apt-get install -y kubeadm={{ k8s_next_version }} && \
-            apt-mark hold kubeadm"
-  when: >
-        (k8s_versions_identical == true) and
-        (k8s_update_available == true) and
-        (inventory_hostname == k8s_master)
+  apt: 
+    name: "kubeadm"
+    update_cache: yes
+  become: true
+  when:
+    - k8s_versions_identical == true
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+    - _k8s_pinned_version['changed']
 
-- name: update | check first control plane
-  shell: "kubeadm upgrade plan"
+- name: update | check version of kubeadm
+  shell: "kubeadm version -o yaml | grep gitVersion | awk -F' ' '{print $2}'"
+  register: _kubeadmVersion
+  become: true
+  run_once: true
+  delegate_to: "{{ k8s_master }}"
+  when:
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | set kubeadmVersion
+  set_fact:
+    kubeadmVersion: "{{ _kubeadmVersion['stdout_lines'][0] }}"
+  run_once: true
+  delegate_facts: true
+  delegate_to: "{{ k8s_master }}"
+  when:
+    - _kubeadmVersion.rc == 0
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+
+- debug: var=kubeadmVersion
+
+- name: update | cordon master node
+  shell: "kubectl drain {{ k8s_master }} --ignore-daemonsets --delete-local-data"
+  become: false
   register: result
   until: result.rc == 0
   retries: 5
   delay: 10
-  when: >
-        (k8s_versions_identical == true) and
-        (k8s_update_available == true) and
-        (inventory_hostname == k8s_master)
+  when:
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+    - k8s_next_version is version_compare('1.16.0', '>')
+
+- name: update | check first control plane
+  shell: "kubeadm upgrade plan --ignore-preflight-errors=CoreDNSUnsupportedPlugins"
+  register: result
+  until: result.rc == 0
+  retries: 8
+  delay: 10
+  when:
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+
+- debug:
+    var: result.stdout_lines
+  when:
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+
+# - meta: end_play
+ 
+- name: update | upgrade first control plane
+  shell: "kubeadm upgrade apply {{kubeadmVersion}} -y --ignore-preflight-errors=CoreDNSUnsupportedPlugins"
+  become: true
+#  vars:
+#    version: "{{ k8s_next_version | regex_replace('^(.*)-(.*)$', '\\1')}}"
+  async: 3600
+  poll: 0
+  register: upgrade_wait
+  when:
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+    - not (result.stdout_lines | list | last is search('Enjoy!'))
+
+- name: update | check on async status of upgrade
+  async_status:
+    jid: "{{ upgrade_wait.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 4 
+  delay: 900
+  when:
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+    - not (result.stdout_lines | list | last is search('Enjoy!'))
+
+- name: update | update first control plane
+  apt:
+    name: "kubelet"
+    update_cache: yes
+  when:
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | uncordon master node
+  shell: "kubectl uncordon {{ k8s_master }}"
+  become: false
+  register: result
+  until: result.rc == 0
+  retries: 5
+  delay: 10
+  when:
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+    - k8s_next_version is version_compare('1.16.0', '>')
+
+- name: update | finish upgrade first control plane (restart kubelet)
+  service:
+    name: kubelet
+    daemon_reload: yes
+    state: restarted
+  become: true
+  when:
+    - k8s_update_available == true
+    - inventory_hostname == k8s_master
+    - k8s_upgrade_cluster|bool
+
+##################################################################
+
+- name: update | remove pinned versions of kubernetes on worker nodes
+  file: 
+    path: /etc/apt/preferences.d/k8s.pref
+    state: absent
+  become: true
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | unhold kubeadm kubelet and kubernetes-cni on worker nodes
+  shell: "apt-mark unhold kubeadm kubelet kubernetes-cni"
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | Pinning K8s Versions
+  template:
+    src: etc/apt/preferences.d/k8s.pref.j2
+    dest: /etc/apt/preferences.d/k8s.pref
+  become: true
+  register: _k8s_pinned_version
+  when:
+    - k8s_versions_identical == true
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+ 
+- name: update | update apt-cache on worker nodes
+  apt:
+    update_cache: yes
+  become: true
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | update worker nodes
+  apt:
+    name: "kubeadm"
+  become: true
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | update worker nodes
+  shell: "apt-mark hold kubeadm"
+  become: true
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | cordon worker nodes
+  shell: "kubectl drain {{ inventory_hostname }} --delete-local-data --ignore-daemonsets"
+  delegate_to: "{{ k8s_master }}"
+  become: false
+  register: result
+  until: result.rc == 0
+  retries: 5
+  delay: 10
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | upgrade worker nodes
+  shell: "kubeadm upgrade node config --kubelet-version v{{kubeadmVersion}}"
+  become: true
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | update apt-cache on worker nodes
+  apt:
+    update_cache: yes
+  become: true
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | upgrade kubelet and kubectl on worker nodes
+  shell: "apt-get install -y kubelet kubectl --allow-change-held-packages"
+  args:
+    warn: false
+  become: true
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | finish upgrade worker node (restart kubelet)
+  service:
+    name: kubelet
+    daemon_reload: yes
+    state: restarted
+  become: true
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
+
+- name: update | uncordon worker nodes
+  shell: "kubectl uncordon {{ inventory_hostname }}"
+  delegate_to: "{{ k8s_master }}"
+  become: false
+  until: result.rc == 0
+  retries: 5
+  delay: 10
+  when:
+    - k8s_update_available == true
+    - inventory_hostname != k8s_master
+    - k8s_upgrade_cluster|bool
 
