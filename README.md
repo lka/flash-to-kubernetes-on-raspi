@@ -32,6 +32,7 @@ clone project from github
 - dive into ansible directory
 ---
 - configure each raspi with ist name f.e. node3
+---
     $ ansible-playbook -e dbs_hostname=node3 bootstrap.yml
 ---
 - raspi will be configured and rebooted, then it will be accessible with
