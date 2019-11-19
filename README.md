@@ -46,5 +46,12 @@ clone project from github
 ---
     $ kubectl get nodes
 ---
+- show dashboard parameters to get access
+---
+    $ ansible-playbook k8s.yml --tags k8s_get_dashboard -e "k8s_dashboard=true"
+---
 - reset cluster (all nodes and master)
     $ ansible-playbook k8s.yml --tags k8s_reset -e "k8s_reset_cluster=true"
+---
+- upgrade cluster (all nodes and master)
+    $ ansible-playbook k8s.yml --tags k8s_upgrade -e "k8s_upgrade_cluster=true"
