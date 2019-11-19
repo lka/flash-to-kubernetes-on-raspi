@@ -31,7 +31,7 @@ clone project from github
 - boot raspberry pi with flash-card inserted
 - dive into ansible directory
 ---
-- configure each raspi with ist name f.e. node3
+- configure each raspi with it's name f.e. node3
 ---
     $ ansible-playbook -e dbs_hostname=node3 bootstrap.yml
 ---
